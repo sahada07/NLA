@@ -1,0 +1,7 @@
+# requirements.txt
+Django==4.2.7
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+PyJWT==2.8.0
+djangorestframework-simplejwt==5.3.0
+python-decouple==3.8
