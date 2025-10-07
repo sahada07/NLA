@@ -150,7 +150,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # International
-# USE_TZ = Trueization
+USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
