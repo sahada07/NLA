@@ -32,7 +32,7 @@ DEBUG = False
 
 # ALLOWED_HOSTS = ['https://nla-1-jmdg.onrender.com']
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = os.getenv("nla-1-jmdg.onrender.com", "localhost,127.0.0.1").split(",")
 
 
 
