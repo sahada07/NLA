@@ -32,10 +32,18 @@ DEBUG = False
 
 # ALLOWED_HOSTS = ['https://nla-1-jmdg.onrender.com']
 
-ALLOWED_HOSTS = os.getenv("nla-1-jmdg.onrender.com", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'https://nla-1-jmdg.onrender.com'
+    
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://nla-1-jmdg.onrender.com',
 
 
-
+]
 
 # Application definition
 
