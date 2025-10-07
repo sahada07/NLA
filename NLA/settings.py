@@ -30,7 +30,11 @@ SECRET_KEY = os.getenv("JWT_SECRET")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = ['https://nla-1-jmdg.onrender.com']
+
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+
 
 
 # Application definition
@@ -89,9 +93,8 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-  ]
+CORS_ALLOW_ALL_ORIGINS = True
+  
 
 #     "https://your-frontend-domain.com",
 # ]
