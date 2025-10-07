@@ -37,10 +37,10 @@ class UserProfile(models.Model):
         return f"{self.user.username} Profile"
 
 
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created,**kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
+# @receiver(post_save, sender=User)
+# def create_user_profile(sender, instance, created,**kwargs):
+#     if created:
+#         UserProfile.objects.create(user=instance)
 
         # Signal to create user profile automatically
 
