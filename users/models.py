@@ -33,8 +33,7 @@ class UserProfile(models.Model):
     failed_login_attempts = models.IntegerField(default=0)
     account_locked_until = models.DateTimeField(null=True, blank=True)
     
-    def save(self, *args,**kwargs):
-        self.username= self.user.username
+    def __str__(self):
         return f"{self.user.username} Profile"
 
 
