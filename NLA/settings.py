@@ -133,10 +133,10 @@ WSGI_APPLICATION = 'NLA.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+import dj_database_url
 
 USE_SQLITE_LOCALLY = not os.environ.get('RENDER')
 
-# Then replace your DATABASES with:
 if USE_SQLITE_LOCALLY:
     DATABASES = {
         'default': {
@@ -145,16 +145,13 @@ if USE_SQLITE_LOCALLY:
         }
     }
 else:
-    # Production on Render - use PostgreSQL
+
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('nla_db_0lhu'),
-            'USER': os.environ.get('nla_db_0lhu_user'),
-            'PASSWORD': os.environ.get('eQasRxCJ18NZ76iatyZ9ACMUGzChaVuI'),
-            'HOST': os.environ.get('dpg-d3j828ffte5s73f66s5g-a'),
-            'PORT': os.environ.get( '5432'),
-        }
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            ssl_require=True
+        )
     }
 
 
