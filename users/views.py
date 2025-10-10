@@ -9,6 +9,7 @@ from django.contrib.auth import login
 from .models import User, UserProfile
 from .serializers import (UserRegistrationSerializer, UserLoginSerializer, 
                          UserProfileSerializer, ChangePasswordSerializer)
+# from pymongo import MongoClient
 # from datetime import timedelta
 
 class UserRegistrationView(APIView):
@@ -120,3 +121,11 @@ class LogoutView(APIView):
             return Response({'message': 'Logout successful'}, status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
             return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+        
+# client = MongoClient('mongodb+srv://<username>:<password>@<atlas cluster>/<myFirstDatabase>?retryWrites=true&w=majority')
+# db = client['sample_medicines']
+# collection = db['medicinedetails']
+# # Perform CRUD operations
+# collection.insert_one({"medicine_id": "RR000123456", "common_name": "Paracetamol"})

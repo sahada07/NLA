@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from datetime import timedelta
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,14 +34,17 @@ DEBUG = False
 # ALLOWED_HOSTS = []
 
 ALLOWED_HOSTS = [ '*'
-    #  'localhost',
-    #  '127.0.0.1',
+    # 'localhost',
+    # '127.0.0.1',
     # 'https://nla-1-jmdg.onrender.com'
 
 
 ]
 
-CSRF_TRUSTED_ORIGINS = ['https://nla-1-jmdg.onrender.com']
+# CSRF_TRUSTED_ORIGINS = [
+#     'https://nla-1-jmdg.onrender.com',
+    
+# ]
 
 # Application definition
 
@@ -51,14 +55,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
      'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
-
     'users',
-    'betting',    
+    'betting',  
+    'cloudinary',
+     'cloudinary_storage',  
 
 ]
 
@@ -127,29 +131,19 @@ TEMPLATES = [
 WSGI_APPLICATION = 'NLA.wsgi.application'
 
 
+
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-import dj_database_url
 
-USE_SQLITE_LOCALLY = not os.environ.get('RENDER')
 
-if USE_SQLITE_LOCALLY:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+DATABASE_URL=os.getenv("DATABASE_URL")
+DATABASES = {
+        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+        
     }
-else:
 
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL'),
-            conn_max_age=600,
-            ssl_require=True
-        )
-    }
+
 
 
 
@@ -187,8 +181,19 @@ USE_I18N = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+DEFAULT_FILE_STORAGE='cloudinary_strage.storage.MediaCloudiryStorage'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUD_NAME'),
+    'API_KEY': os.getenv('API_KEY'),
+    'API_SECRET': os.getenv('API_SECRET')
+}
+
+
+
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 
 
 # Default primary key field type
