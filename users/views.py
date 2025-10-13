@@ -9,6 +9,7 @@ from django.contrib.auth import login
 from .models import User, UserProfile
 from .serializers import (UserRegistrationSerializer, UserLoginSerializer, 
                          UserProfileSerializer, ChangePasswordSerializer)
+from rest_framework.permissions import IsAuthenticated
 # from pymongo import MongoClient
 # from datetime import timedelta
 
@@ -111,6 +112,18 @@ class ChangePasswordView(APIView):
             user.save()
             return Response({'message': 'Password updated successfully'})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UpdateProfileView(APIView):
+    permission_classes=[IsAuthenticated]
+
+    def put (self,request):
+        serializer=UserProfileSerializer(request.user,data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+             
 
 class LogoutView(APIView):
     def post(self, request):
