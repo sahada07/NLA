@@ -115,13 +115,13 @@ class ChangePasswordView(APIView):
 
 
 class UpdateProfileView(APIView):
-    permission_classes=[IsAuthenticated]
+    # permission_classes=[IsAuthenticated]
 
     def put (self,request):
         serializer=UserProfileSerializer(request.user,data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return Response({'messsage':'Profile Updated Suscessfully ','user':serializer.data})
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
              
 
