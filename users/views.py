@@ -115,7 +115,7 @@ class ChangePasswordView(APIView):
 
 
 class UpdateProfileView(APIView):
-    # permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated]
 
     def put (self,request):
         serializer=UserProfileSerializer(request.user,data=request.data)

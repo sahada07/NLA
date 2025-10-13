@@ -13,11 +13,38 @@ class User(AbstractUser):
         ('agent', 'Agent'),
         ('admin', 'Administrator'),
     )
-    
+
+    ID_TYPE_CHOICES=(
+        ('ghana_card','Ghana Card'),
+        ('voters_id','Voters Id')
+
+    )
+
+    REGION_CHOICES=(
+        ('Greater Accra-Accra','Greater Accra-Accra'),
+        ('Ashanti Region','Ashanti Region - Kumasi'),
+        ('Western Region','Western Region - Sekondi-Takoradi'),
+        ('Eastern Region','Eastern Region - Koforidua'),
+        ('Central Region','Central Region - Cape Coast'),
+        ('Northern Region','Northern Region - Tamale'),
+        ('Upper East Region','Upper East Region - Bolgatanga'),
+        ('Upper West Region','Upper West Region - Wa'),
+        ('Bono Region','Bono Region - Sunyani'),
+        ('Bono East Region','Bono East Region - Techiman'),
+        ('Ahafo Region','Ahafo Region - Goaso'),
+        ('Western North','Western North Region - Sefwi Wiawso'),
+        ('Oti Region','Oti Region - Dambai'),
+        ('Volta Region','Volta Region - Ho'),
+        ('North East Region','North East Region - Nalerigu'),
+        ('Savannah Regio','Savannah Region - Damango'),
+    )
+
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='player')
     date_of_birth = models.DateField(null=True, blank=True)
     phone_number = models.CharField(max_length=15, blank=True)
     address = models.TextField(blank=True)
+    id_type=models.CharField(max_length=20, choices=ID_TYPE_CHOICES,default='ghana_card')
+    region=models.CharField(max_length=20, choices=REGION_CHOICES,default='Greater Accra-Accra')
     id_verified = models.BooleanField(default=False)
     account_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
