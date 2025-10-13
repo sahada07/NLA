@@ -44,6 +44,7 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=15, blank=True)
     address = models.TextField(blank=True)
     id_type=models.CharField(max_length=20, choices=ID_TYPE_CHOICES,default='ghana_card')
+    id_number=models.CharField(max_length=30, default='000-0000-0000-0')
     region=models.CharField(max_length=20, choices=REGION_CHOICES,default='Greater Accra-Accra')
     id_verified = models.BooleanField(default=False)
     account_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)

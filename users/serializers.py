@@ -15,7 +15,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'email', 'password', 'password_confirm', 
-                 'first_name', 'last_name','id_type','region','date_of_birth', 'phone_number', 'user_type')
+                 'first_name', 'last_name','id_type','id_number','region','date_of_birth', 'phone_number', 'user_type')
     
     
 
@@ -42,6 +42,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         phone_number= validated_data.pop('phone_number')
         user_type= validated_data.pop('user_type','player')
         id_type= validated_data.pop('id_type','ghana-card')
+        id_number = validated_data.pop('id_number','000-0000-0000-0')
         region=validated_data.pop('region','Greater Accra-Accra')
         user = User.objects.create_user(**validated_data)
 
@@ -78,8 +79,8 @@ class UserLoginSerializer(serializers.Serializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name','id_type','region', 
-                 'date_of_birth', 'phone_number', 'user_type', 'account_balance')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name','id_type','id_number',
+                  'region','date_of_birth', 'phone_number', 'user_type', 'account_balance')
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
