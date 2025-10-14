@@ -76,14 +76,15 @@ class UserLoginView(APIView):
             user = User.objects.get(username=username)
             profile = user.profile
             profile.failed_login_attempts += 1
+
             
             # Lock account after 5 failed attempts for 30 minutes
-            if profile.failed_login_attempts >= 5:
-                profile.account_locked_until = timezone.now() + timezone.timedelta(minutes=30)
-                profile.save()
-                return Response({
-                    'error': 'Account temporarily locked due to too many failed attempts. Try again in 30 minutes.'
-                }, status=status.HTTP_423_LOCKED)
+            # if profile.failed_login_attempts >= 5:
+            #     profile.account_locked_until = timezone.now() + timezone.timedelta(minutes=30)
+            #     profile.save()
+            #     return Response({
+            #         'error': 'Account temporarily locked due to too many failed attempts. Try again in 30 minutes.'
+            #     }, status=status.HTTP_423_LOCKED)
                 
             profile.save()
         except User.DoesNotExist:
