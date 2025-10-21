@@ -12,6 +12,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     region = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True)
     
+    
     class Meta:
         model = User
         fields = ('username', 'email', 'password', 'password_confirm', 
@@ -67,9 +68,9 @@ class UserLoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError('Invalid credentials')
             
             # Check if account is locked
-            profile = user.profile
-            if profile.account_locked_until and profile.account_locked_until > timezone.now():
-                raise serializers.ValidationError('Account temporarily locked due to too many failed attempts')
+            # profile = user.profile
+            # if profile.account_locked_until and profile.account_locked_until > timezone.now():
+            #     raise serializers.ValidationError('Account temporarily locked due to too many failed attempts')
                 
             attrs['user'] = user
             return attrs
