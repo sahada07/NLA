@@ -1,4 +1,4 @@
-# NLA Backend
+<!-- # NLA Backend
 
 A Django REST API backend for managing users, betting, lotto, and related resources.
 
@@ -607,4 +607,4 @@ router.register('subscriptions', SubscriptionViewSet, basename='subscriptions')
 
 **Last Updated:** October 2025  
 **Python Version:** 3.13  
-**Django Version:** [Add version from requirements.txt]
+**Django Version:** [Add version from requirements.txt] -->
