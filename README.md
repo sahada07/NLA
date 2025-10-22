@@ -249,9 +249,7 @@ Authorization: Bearer <token>
   "user_type": "player",
   "account_balance": "150.00"
 }
-```
-
----
+``
 
 ### 4. Change Password
 **Endpoint:** `POST /api/auth/change-password/`
@@ -536,8 +534,6 @@ class UserRegistrationTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('date_of_birth', response.data)
 ```
-
----
 
 ## Additional Notes
 
