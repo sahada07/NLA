@@ -1,6 +1,10 @@
 # NLA Backend
 
+<<<<<<< HEAD
 A Django REST API backend for managing users, betting, lotto, and related resources.
+=======
+This reposjitory contains the backend for the NLA project — a Django REST API for managing users, betting, lotto, and related resources.
+>>>>>>> 0677d42e109de9b5d953f1f4302844ff5ccfa09d
 
 ## Contents
 
