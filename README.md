@@ -16,7 +16,7 @@ This reposjitory contains the backend for the NLA project — a Django REST API 
 
 - Python 3.11+ (developed with Python 3.13)
 - pip
-- virtualenv or venv
+- virtualenv or venv 
 
 ## Quick Start (Windows PowerShell)
 
@@ -64,22 +64,25 @@ python manage.py test
 7. [Installation & Setup](#installation--setup)
 8. [Usage Examples](#usage-examples)
 9. [Error Handling](#error-handling)
-10. [Testing](#testing)
+10.[Testing](#testing)
+11.[PostmanCollection](#postman-collection)
 
 ---
 
 ## Overview
+The Lottery API is a Django REST Framework-based system that provides:
 
-### Purpose
-This authentication system is designed for a betting platform that requires:
-- Age verification (18+ compliance)
-- Role-based access control
-- Account security with lockout protection
-- User profile management
+User authentication and management
+Lottery betting functionality
+Game subscription system
+Real-time notifications
+Wallet management
+
+Base URL: http://localhost:8000/api
+
 
 ### Key Features
 - ✅ User registration with age verification
-- ✅ Secure login with account lockout protection
 - ✅ Password change functionality
 - ✅ Three user roles: Player, Agent, Administrator
 - ✅ Account balance tracking
@@ -111,7 +114,11 @@ This authentication system is designed for a betting platform that requires:
 ┌─────────────────┐
 │  Models         │
 │  - User         │
-│  - UserProfile  │
+│  - UserProfile
+   - Notification
+   - Subscription 
+   - Games
+│  - Wallet
 └─────────────────┘
 ```
 

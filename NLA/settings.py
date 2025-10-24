@@ -29,7 +29,7 @@ load_dotenv(os.path.join(BASE_DIR,"dotenv"))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("JWT_SECRET")
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # ALLOWED_HOSTS = []
 
