@@ -5,7 +5,7 @@ from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 
-router.register(r'game-types/',GameTypeViewSet,basename='game-types')
+router.register('types/',GameTypeViewSet,basename='game-types')
 router.register(r'draws',DrawViewSet,basename='draw')
 router.register(r'bets',BetViewSet,basename='bet')
 router.register(r'subscriptions',SubscriptionViewSet,basename='subscriptions')
