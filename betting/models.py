@@ -140,8 +140,8 @@ class BetType(models.Model):
     
     is_active = models.BooleanField(default=True)
     
-    # class Meta:
-    #     db_table = 'bet_type'
+    class Meta:
+     db_table = 'bet_type'
     
     def __str__(self):
         return self.display_name
