@@ -191,7 +191,7 @@ class Draw(models.Model):
         ('cancelled', 'Cancelled'),
     ]
     
-    game_type = models.ForeignKey(GameType, on_delete=models.CASCADE, related_name='draws')
+    game_type = models.ForeignKey(GameType, on_delete=models.CASCADE)
     draw_number = models.CharField(max_length=50, unique=True)
     draw_date = models.DateField()
     draw_time = models.TimeField()
