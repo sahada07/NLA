@@ -245,19 +245,26 @@ class BetSerializer(serializers.ModelSerializer):
 
 
 
-class BetDetailSerializer(BetSerializer):
-    """Detailed bet information with transactions"""
+class BetDetailSerializer(serializers.ModelSerializer):
+    """Detailed serializer for single bet retrieval"""
+    game_name = serializers.CharField(source='draw.game_type.name', read_only=True)
+    bet_type_name = serializers.CharField(source='bet_type.display_name', read_only=True)
+    draw_number = serializers.CharField(source='draw.draw_number', read_only=True)
+    draw_date = serializers.DateField(source='draw.draw_date', read_only=True)
+    winning_numbers = serializers.SerializerMethodField(read_only=True)
     
-    transactions = serializers.SerializerMethodField()
-    winning_numbers = serializers.JSONField(source='draw.winning_numbers', read_only=True)
+    class Meta:
+        model = Bet
+        fields = [
+            'id', 'bet_number', 'game_name', 'bet_type_name',
+            'draw_number', 'draw_date', 'selected_numbers',
+            'stake_amount', 'potential_winnings', 'actual_winnings',
+            'status', 'placed_at', 'processed_at', 'paid_at',
+            'winning_numbers', 'agent'
+        ]
     
-    class Meta(BetSerializer.Meta):
-        fields = BetSerializer.Meta.fields + ['transactions', 'winning_numbers', 'paid_at']
-    
-    def get_transactions(self, obj):
-        transactions = obj.transactions.all()
-        return BetTransactionSerializer(transactions, many=True).data
-
+    def get_winning_numbers(self, obj):
+        return obj.draw.winning_numbers if obj.draw.winning_numbers else None
 
 class BetTransactionSerializer(serializers.ModelSerializer):
     """Transaction history for bets"""

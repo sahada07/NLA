@@ -17,6 +17,8 @@ from django.db.models import Q,Count,Sum
 from decimal import Decimal
 
 
+
+
 class GameTypeViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for viewing game types
@@ -242,6 +244,10 @@ class BetViewSet(viewsets.ModelViewSet):
     """
     
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Return only the current user's bets"""
+        return Bet.objects.filter(user=self.request.user)
     
     def get_serializer_class(self):
         if self.action == 'create':
@@ -415,10 +421,10 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 
 class BetViewSet(viewsets.ModelViewSet):
     """
-    API endpoint for managing user bets
+    API endpoint for managing bets
     
     list: Get user's bets
-    retrieve: Get specific bet
+    retrieve: Get details of a specific bet
     create: Place a new bet
     """
     
@@ -430,6 +436,84 @@ class BetViewSet(viewsets.ModelViewSet):
         elif self.action == 'retrieve':
             return BetDetailSerializer
         return BetSerializer
+    
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Bet.objects.filter(user=user).select_related(
+            'draw', 'draw__game_type', 'bet_type'
+        )
+        
+        # Filter by status
+        status_param = self.request.query_params.get('status', None)
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        
+        # Filter by game type
+        game_type = self.request.query_params.get('game_type', None)
+        if game_type:
+            queryset = queryset.filter(draw__game_type_id=game_type)
+        
+        return queryset
+    
+    def create(self, request, *args, **kwargs):
+        """Place a new bet"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        bet = serializer.save()
+        
+        return Response(
+            BetSerializer(bet).data,
+            status=status.HTTP_201_CREATED
+        )
+    
+    @action(detail=False, methods=['get'])
+    def active(self, request):
+        """Get user's active bets"""
+        bets = self.get_queryset().filter(status='active')
+        serializer = self.get_serializer(bets, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def history(self, request):
+        """Get user's bet history"""
+        bets = self.get_queryset().filter(
+            status__in=['won', 'lost', 'paid']
+        )
+        serializer = self.get_serializer(bets, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def check_result(self, request, pk=None):
+        """Check if a bet won or lost"""
+        bet = self.get_object()
+        
+        if bet.draw.status != 'completed':
+            return Response({
+                'message': 'Draw results not available yet',
+                'status': bet.status
+            })
+        
+        # Check if bet already processed
+        if bet.status in ['won', 'lost']:
+            return Response({
+                'bet_number': bet.bet_number,
+                'status': bet.status,
+                'selected_numbers': bet.selected_numbers,
+                'winning_numbers': bet.draw.winning_numbers,
+                'winnings': str(bet.actual_winnings)
+            })
+        
+        # Process bet
+        won = bet.check_win()
+        
+        return Response({
+            'bet_number': bet.bet_number,
+            'status': bet.status,
+            'selected_numbers': bet.selected_numbers,
+            'winning_numbers': bet.draw.winning_numbers,
+            'won': won,
+            'winnings': str(bet.actual_winnings)
+        })
 
 class StatisticsViewSet(viewsets.ViewSet):
     """
