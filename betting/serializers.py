@@ -91,7 +91,7 @@ class DrawDetailSerializer(DrawListSerializer):
             'total_payout_amount', 'created_at', 'updated_at'
         ]
 # BET SERIALIZERS
-class PlaceBetSerializer(serializers.Serializer):
+class PlaceBetSerializer(serializers.ModelSerializer):
     """Serializer for placing a new bet"""
     
     draw_id = serializers.IntegerField()
@@ -226,12 +226,13 @@ class PlaceBetSerializer(serializers.Serializer):
         return bet
 
 class BetSerializer(serializers.ModelSerializer):
-    """Serializer for bet details"""
+    """Serializer for bet list - FIXED VERSION"""
     
-    game_name = serializers.CharField(source='draw.game_type.name', read_only=True)
-    bet_type_name = serializers.CharField(source='bet_type.display_name', read_only=True)
-    draw_number = serializers.CharField(source='draw.draw_number', read_only=True)
-    draw_date = serializers.DateField(source='draw.draw_date', read_only=True)
+    # Add these to avoid empty serialization
+    game_name = serializers.SerializerMethodField()
+    bet_type_name = serializers.SerializerMethodField()
+    draw_number = serializers.SerializerMethodField()
+    draw_date = serializers.SerializerMethodField()
     
     class Meta:
         model = Bet
@@ -242,6 +243,34 @@ class BetSerializer(serializers.ModelSerializer):
             'status', 'placed_at', 'processed_at'
         ]
         read_only_fields = ['id', 'bet_number', 'status', 'placed_at', 'processed_at']
+    
+    def get_game_name(self, obj):
+        """Safely get game name"""
+        try:
+            return obj.draw.game_type.name if obj.draw and obj.draw.game_type else None
+        except:
+            return None
+    
+    def get_bet_type_name(self, obj):
+        """Safely get bet type name"""
+        try:
+            return obj.bet_type.display_name if obj.bet_type else None
+        except:
+            return None
+    
+    def get_draw_number(self, obj):
+        """Safely get draw number"""
+        try:
+            return obj.draw.draw_number if obj.draw else None
+        except:
+            return None
+    
+    def get_draw_date(self, obj):
+        """Safely get draw date"""
+        try:
+            return obj.draw.draw_date if obj.draw else None
+        except:
+            return None
 
 
 

@@ -6,6 +6,9 @@ from django.utils import timezone
 
 # Define ModelAdmin classes FIRST, then register
 
+
+
+@admin.register(GameType)
 class GameTypeAdmin(admin.ModelAdmin):
     list_display = [
         'name', 'code', 'category', 'min_stake', 'max_stake',
@@ -52,6 +55,11 @@ class GameTypeAdmin(admin.ModelAdmin):
     total_subscribers.short_description = 'Subscribers'
 
 
+# ==========================================
+# BET TYPE ADMIN
+# ==========================================
+
+@admin.register(BetType)
 class BetTypeAdmin(admin.ModelAdmin):
     list_display = [
         'display_name', 'name', 'base_odds',
@@ -59,17 +67,51 @@ class BetTypeAdmin(admin.ModelAdmin):
     ]
     list_filter = ['is_active']
     search_fields = ['name', 'display_name']
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'display_name', 'description')
+        }),
+        ('Odds & Requirements', {
+            'fields': (
+                'base_odds',
+                'min_numbers_required',
+                'max_numbers_allowed'
+            )
+        }),
+        ('Status', {
+            'fields': ('is_active',)
+        }),
+    )
 
 
+# ==========================================
+# GAME ODDS ADMIN
+# ==========================================
+
+@admin.register(GameOdds)
 class GameOddsAdmin(admin.ModelAdmin):
     list_display = [
-        'game_type', 'bet_type', 'numbers_count', 
+        'game_type', 'bet_type', 'numbers_count',
         'numbers_matched', 'payout_multiplier'
     ]
     list_filter = ['game_type', 'bet_type']
-    search_fields = ['game_type__name', 'bet_type__name']
+    search_fields = ['game_type__name', 'bet_type__display_name']
+    
+    fieldsets = (
+        ('Game & Bet Type', {
+            'fields': ('game_type', 'bet_type')
+        }),
+        ('Configuration', {
+            'fields': (
+                'numbers_count',
+                'numbers_matched',
+                'payout_multiplier'
+            )
+        }),
+    )
 
-
+@admin.register(Draw)
 class DrawAdmin(admin.ModelAdmin):
     list_display = [
         'draw_number', 'game_type', 'draw_date', 'draw_time',
@@ -149,11 +191,9 @@ class DrawAdmin(admin.ModelAdmin):
     close_betting.short_description = 'Close betting for selected draws'
     
     def cancel_draw(self, request, queryset):
-        # Refund all bets for cancelled draws
         for draw in queryset:
             bets = draw.bets.filter(status='active')
             for bet in bets:
-                # Refund stake
                 bet.user.account_balance += bet.stake_amount
                 bet.user.save()
                 bet.status = 'cancelled'
@@ -164,7 +204,6 @@ class DrawAdmin(admin.ModelAdmin):
     cancel_draw.short_description = 'Cancel selected draws (refund bets)'
     
     def process_results(self, request, queryset):
-        """Process draw results and check all bets"""
         processed = 0
         for draw in queryset.filter(status='completed'):
             if draw.winning_numbers:
@@ -177,6 +216,8 @@ class DrawAdmin(admin.ModelAdmin):
     process_results.short_description = 'Process results for selected draws'
 
 
+
+@admin.register(Bet)
 class BetAdmin(admin.ModelAdmin):
     list_display = [
         'bet_number', 'user_link', 'game_name', 'draw_number',
@@ -188,32 +229,28 @@ class BetAdmin(admin.ModelAdmin):
         'bet_number', 'user__username', 'user__email',
         'draw__draw_number'
     ]
+    # REMOVED readonly_fields to allow editing!
     readonly_fields = [
-        'bet_number', 'user', 'draw', 'bet_type',
-        'selected_numbers', 'stake_amount', 'potential_winnings',
-        'actual_winnings', 'placed_at', 'processed_at', 'paid_at'
+        'bet_number', 'placed_at', 'processed_at', 'paid_at'
     ]
     date_hierarchy = 'placed_at'
     
-    fieldsets = (
-        ('Bet Information', {
-            'fields': ('bet_number', 'user', 'draw', 'bet_type')
-        }),
-        ('Numbers & Stake', {
-            'fields': ('selected_numbers', 'stake_amount')
-        }),
-        ('Winnings', {
-            'fields': (
-                'potential_winnings', 'actual_winnings', 'status'
-            )
-        }),
-        ('Agent Information', {
-            'fields': ('agent', 'agent_commission'),
-            'classes': ('collapse',)
-        }),
-        ('Timestamps', {
-            'fields': ('placed_at', 'processed_at', 'paid_at')
-        }),
+    # Make fields editable in admin
+    fields = (
+        'bet_number',
+        'user',
+        'draw',
+        'bet_type',
+        'selected_numbers',
+        'stake_amount',
+        'potential_winnings',
+        'actual_winnings',
+        'status',
+        'agent',
+        'agent_commission',
+        'placed_at',
+        'processed_at',
+        'paid_at'
     )
     
     actions = ['check_results', 'mark_as_paid']
@@ -257,7 +294,6 @@ class BetAdmin(admin.ModelAdmin):
     status_badge.short_description = 'Status'
     
     def check_results(self, request, queryset):
-        """Check results for selected bets"""
         checked = 0
         for bet in queryset.filter(status='active'):
             if bet.draw.status == 'completed' and bet.draw.winning_numbers:
@@ -268,15 +304,29 @@ class BetAdmin(admin.ModelAdmin):
     check_results.short_description = 'Check results for selected bets'
     
     def mark_as_paid(self, request, queryset):
-        """Mark winning bets as paid"""
         updated = queryset.filter(status='won').update(
             status='paid',
             paid_at=timezone.now()
         )
         self.message_user(request, f'{updated} bets marked as paid')
     mark_as_paid.short_description = 'Mark as paid'
+    
+    # Override save_model to generate bet_number if not provided
+    def save_model(self, request, obj, form, change):
+        if not obj.bet_number:
+            from .models import generate_bet_number
+            obj.bet_number = generate_bet_number()
+        
+        # Calculate potential winnings if not set
+        if not change:  # Only on creation
+            obj.save()  # Save first to get ID
+            obj.calculate_potential_winnings()
+        
+        super().save_model(request, obj, form, change)
 
 
+
+@admin.register(BetTransaction)
 class BetTransactionAdmin(admin.ModelAdmin):
     list_display = [
         'reference', 'user_link', 'transaction_type',
@@ -289,6 +339,10 @@ class BetTransactionAdmin(admin.ModelAdmin):
         'balance_before', 'balance_after', 'reference', 'created_at'
     ]
     date_hierarchy = 'created_at'
+    
+    # Don't allow adding transactions manually
+    def has_add_permission(self, request):
+        return False
     
     def user_link(self, obj):
         url = reverse('admin:users_user_change', args=[obj.user.id])
@@ -305,6 +359,8 @@ class BetTransactionAdmin(admin.ModelAdmin):
     amount_display.short_description = 'Amount'
 
 
+
+@admin.register(UserSubscription)
 class UserSubscriptionAdmin(admin.ModelAdmin):
     list_display = [
         'user_link', 'game_type', 'status_badge', 'subscribed_at'
@@ -312,6 +368,9 @@ class UserSubscriptionAdmin(admin.ModelAdmin):
     list_filter = ['is_active', 'game_type', 'subscribed_at']
     search_fields = ['user__username', 'game_type__name']
     date_hierarchy = 'subscribed_at'
+    
+    fields = ('user', 'game_type', 'is_active', 'subscribed_at', 'unsubscribed_at')
+    readonly_fields = ['subscribed_at']
     
     def user_link(self, obj):
         url = reverse('admin:users_user_change', args=[obj.user.id])
@@ -329,6 +388,9 @@ class UserSubscriptionAdmin(admin.ModelAdmin):
     status_badge.short_description = 'Status'
 
 
+
+
+@admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = [
         'title', 'user_link', 'notification_type',
@@ -338,6 +400,18 @@ class NotificationAdmin(admin.ModelAdmin):
     search_fields = ['title', 'message', 'user__username']
     readonly_fields = ['created_at', 'read_at']
     date_hierarchy = 'created_at'
+    
+    fields = (
+        'user',
+        'game_type',
+        'bet',
+        'notification_type',
+        'title',
+        'message',
+        'is_read',
+        'created_at',
+        'read_at'
+    )
     
     actions = ['mark_as_read', 'mark_as_unread']
     
@@ -366,12 +440,16 @@ class NotificationAdmin(admin.ModelAdmin):
     mark_as_unread.short_description = 'Mark as unread'
 
 
+
+admin.site.site_header = "NLA Betting System Administration"
+admin.site.site_title = "NLA Admin"
+admin.site.index_title = "Welcome to NLA Betting System Admin"
 # NOW register all models with their Admin classes
-admin.site.register(GameType, GameTypeAdmin)
-admin.site.register(BetType, BetTypeAdmin)
-admin.site.register(GameOdds, GameOddsAdmin)
-admin.site.register(Draw, DrawAdmin)
-admin.site.register(Bet, BetAdmin)
-admin.site.register(BetTransaction, BetTransactionAdmin)
-admin.site.register(UserSubscription, UserSubscriptionAdmin)
-admin.site.register(Notification, NotificationAdmin)
+# admin.site.register(GameType, GameTypeAdmin)
+# admin.site.register(BetType, BetTypeAdmin)
+# admin.site.register(GameOdds, GameOddsAdmin)
+# admin.site.register(Draw, DrawAdmin)
+# admin.site.register(Bet, BetAdmin)
+# admin.site.register(BetTransaction, BetTransactionAdmin)
+# admin.site.register(UserSubscription, UserSubscriptionAdmin)
+# admin.site.register(Notification, NotificationAdmin)

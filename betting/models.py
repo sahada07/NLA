@@ -315,17 +315,21 @@ class Bet(models.Model):
         # Get the odds for this bet type and game
         try:
             odds = GameOdds.objects.get(
-                game_type=self.draw.game_type,
-                bet_type=self.bet_type,
-                numbers_count=len(self.selected_numbers)
-            )
-            self.potential_winnings = self.stake_amount * odds.payout_multiplier
-        except GameOdds.DoesNotExist:
-            # Use base odds from bet type
+            game_type=self.draw.game_type,
+            bet_type=self.bet_type,
+            numbers_count=len(self.selected_numbers)
+        )
+            if odds:
+                self.potential_winnings = self.stake_amount * odds.payout_multiplier
+            else:
+                self.potential_winnings = self.Stake_amount * self.bet_type.base_odds
+        except Exception as e:
             self.potential_winnings = self.stake_amount * self.bet_type.base_odds
-        
-        self.save()
-        return self.potential_winnings
+
+            self.save()
+            return self.potential_winnings
+
+
     
     def check_win(self):
         """Check if this bet won after draw results are published"""

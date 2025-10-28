@@ -15,4 +15,5 @@ router.register(r'statistics', StatisticsViewSet, basename='statistics')
 
 urlpatterns = [
     path('', include(router.urls)),
+    # path('test-bet/',test_bet_endpoint, name='test-bet')
 ]

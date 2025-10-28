@@ -421,14 +421,11 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 
 class BetViewSet(viewsets.ModelViewSet):
     """
-    API endpoint for managing bets
-    
-    list: Get user's bets
-    retrieve: Get details of a specific bet
-    create: Place a new bet
+    API endpoint for managing bets - COMPLETELY FIXED VERSION
     """
     
     permission_classes = [IsAuthenticated]
+    serializer_class = BetSerializer  # Default serializer
     
     def get_serializer_class(self):
         if self.action == 'create':
@@ -438,33 +435,98 @@ class BetViewSet(viewsets.ModelViewSet):
         return BetSerializer
     
     def get_queryset(self):
+        """Get all bets for the current user - FIXED"""
         user = self.request.user
-        queryset = Bet.objects.filter(user=user).select_related(
-            'draw', 'draw__game_type', 'bet_type'
-        )
         
-        # Filter by status
-        status_param = self.request.query_params.get('status', None)
+        print(f"[DEBUG] Getting bets for user: {user.username} (ID: {user.id})")
+        
+        # Use prefetch_related instead of select_related for better performance
+        queryset = Bet.objects.filter(user=user).select_related(
+            'draw', 
+            'draw__game_type', 
+            'bet_type'
+        ).prefetch_related(
+            'user'
+        ).order_by('-placed_at')
+        
+        print(f"[DEBUG] Initial queryset count: {queryset.count()}")
+        
+        # Apply filters if provided
+        status_param = self.request.query_params.get('status')
         if status_param:
             queryset = queryset.filter(status=status_param)
+            print(f"[DEBUG] After status filter '{status_param}': {queryset.count()}")
         
-        # Filter by game type
-        game_type = self.request.query_params.get('game_type', None)
-        if game_type:
-            queryset = queryset.filter(draw__game_type_id=game_type)
+        game_type_id = self.request.query_params.get('game_type')
+        if game_type_id:
+            queryset = queryset.filter(draw__game_type_id=game_type_id)
+            print(f"[DEBUG] After game_type filter '{game_type_id}': {queryset.count()}")
         
         return queryset
     
+    def list(self, request, *args, **kwargs):
+        """List all bets with proper debugging"""
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            
+            # Debug: Check what's in the database
+            all_user_bets = Bet.objects.filter(user=request.user)
+            print(f"[DEBUG] Total bets in DB for user: {all_user_bets.count()}")
+            
+            if all_user_bets.exists():
+                for bet in all_user_bets[:5]:  # Show first 5
+                    print(f"[DEBUG] Bet {bet.id}: {bet.bet_number}, Status: {bet.status}")
+            
+            print(f"[DEBUG] Final queryset count: {queryset.count()}")
+            
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                print(f"[DEBUG] Serialized page data: {len(serializer.data)} items")
+                return self.get_paginated_response(serializer.data)
+            
+            serializer = self.get_serializer(queryset, many=True)
+            print(f"[DEBUG] Serialized all data: {len(serializer.data)} items")
+            
+            return Response(serializer.data)
+            
+        except Exception as e:
+            print(f"[ERROR] List method failed: {str(e)}")
+            return Response(
+                {"error": "Failed to retrieve bets", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     def create(self, request, *args, **kwargs):
         """Place a new bet"""
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        bet = serializer.save()
+        print(f"[DEBUG] Creating bet for user: {request.user.username}")
+        print(f"[DEBUG] Request data: {request.data}")
         
-        return Response(
-            BetSerializer(bet).data,
-            status=status.HTTP_201_CREATED
-        )
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        
+        if serializer.is_valid():
+            print("[DEBUG] Serializer is valid")
+            bet = serializer.save()
+            print(f"[DEBUG] Bet created: {bet.bet_number}")
+            
+            # Use the main serializer for response
+            response_serializer = BetSerializer(bet)
+            return Response(
+                response_serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+        else:
+            print(f"[DEBUG] Serializer errors: {serializer.errors}")
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Get specific bet details - FIXED"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def active(self, request):
@@ -514,7 +576,7 @@ class BetViewSet(viewsets.ModelViewSet):
             'won': won,
             'winnings': str(bet.actual_winnings)
         })
-
+    
 class StatisticsViewSet(viewsets.ViewSet):
     """
     API endpoint for user statistics
@@ -552,4 +614,6 @@ class StatisticsViewSet(viewsets.ViewSet):
         serializer = UserStatisticsSerializer(data)
         return Response(serializer.data)
 
-   
+
+
+
