@@ -21,16 +21,60 @@ class GameTypeSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id']
 
-class BetTypeSerializer(serializers.ModelSerializer):
-    """Available bet types"""
+# betting/serializers.py - ENHANCED BetSerializer
+class BetSerializer(serializers.ModelSerializer):
+    """Serializer for bet list - ENHANCED VERSION"""
+    
+    game_name = serializers.SerializerMethodField()
+    bet_type_name = serializers.SerializerMethodField()
+    draw_number = serializers.SerializerMethodField()
+    draw_date = serializers.SerializerMethodField()
+    user_name = serializers.SerializerMethodField()  # Add this for superusers
     
     class Meta:
-        model = BetType
+        model = Bet
         fields = [
-            'id', 'name', 'display_name', 'description',
-            'base_odds', 'min_numbers_required', 'max_numbers_allowed'
+            'id', 'bet_number', 'game_name', 'bet_type_name',
+            'draw_number', 'draw_date', 'selected_numbers', 'user_name',
+            'stake_amount', 'potential_winnings', 'actual_winnings',
+            'status', 'placed_at', 'processed_at'
         ]
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'bet_number', 'status', 'placed_at', 'processed_at']
+    
+    def get_game_name(self, obj):
+        """Safely get game name"""
+        try:
+            return obj.draw.game_type.name
+        except:
+            return "Unknown Game"
+    
+    def get_bet_type_name(self, obj):
+        """Safely get bet type name"""
+        try:
+            return obj.bet_type.display_name
+        except:
+            return "Unknown Bet Type"
+    
+    def get_draw_number(self, obj):
+        """Safely get draw number"""
+        try:
+            return obj.draw.draw_number
+        except:
+            return "Unknown Draw"
+    
+    def get_draw_date(self, obj):
+        """Safely get draw date"""
+        try:
+            return obj.draw.draw_date
+        except:
+            return None
+    
+    def get_user_name(self, obj):
+        """Get username - useful for superuser view"""
+        try:
+            return obj.user.username
+        except:
+            return "Unknown User"
 
 class GameOddsSerializer(serializers.ModelSerializer):
     """Payout odds for different combinations"""
@@ -82,7 +126,7 @@ class DrawListSerializer(serializers.ModelSerializer):
 class DrawDetailSerializer(DrawListSerializer):
     """Detailed view of a draw including results"""
     
-    winning_numbers = serializers.JSONField(read_only=True)
+    winning_numbers = serializers.JSONField
     machine_number = serializers.CharField(read_only=True)
     
     class Meta(DrawListSerializer.Meta):

@@ -209,7 +209,7 @@ One-to-One relationship with User for security features.
 ---
 
 ### 2. User Login
-**Endpoint:** `POST /api/auth/login/`
+**Endpoint:** `POST /api/login/`
 
 **Request Body:**
 ```json
@@ -240,7 +240,7 @@ One-to-One relationship with User for security features.
 ---
 
 ### 3. Get User Profile
-**Endpoint:** `GET /api/auth/profile/`
+**Endpoint:** `GET /api/profile/`
 
 **Headers:**
 ```
@@ -263,7 +263,7 @@ Authorization: Bearer <token>
 ``
 
 ### 4. Change Password
-**Endpoint:** `POST /api/auth/change-password/`
+**Endpoint:** `POST /api/change-password/`
 
 **Request Body:**
 ```json
@@ -412,7 +412,7 @@ def create_user_profile(sender, instance, created, **kwargs):
 ```python
 import requests
 
-url = "http://localhost:8000/api/auth/register/"
+url = "http://localhost:8000/api/register/"
 data = {
     "username": "newplayer",
     "email": "player@example.com",
@@ -431,7 +431,7 @@ print(response.json())
 
 **JavaScript (fetch):**
 ```javascript
-fetch('http://localhost:8000/api/auth/register/', {
+fetch('http://localhost:8000/api/register/', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -456,7 +456,7 @@ fetch('http://localhost:8000/api/auth/register/', {
 
 **cURL:**
 ```bash
-curl -X POST http://localhost:8000/api/auth/login/ \
+curl -X POST http://localhost:8000/api/login/ \
   -H "Content-Type: application/json" \
   -d '{
     "username": "newplayer",
@@ -470,7 +470,7 @@ curl -X POST http://localhost:8000/api/auth/login/ \
 ```python
 import requests
 
-url = "http://localhost:8000/api/auth/profile/"
+url = "http://localhost:8000/api/profile/"
 headers = {
     "Authorization": "Bearer YOUR_TOKEN_HERE"
 }
@@ -575,13 +575,18 @@ class UserRegistrationTests(TestCase):
 ## Support & Maintenance
 
 **Contact:** [Your contact information]  
-**Last Updated:** October 3, 2025  
+**Last Updated:** October 21, 2025  
 **Version:** 1.0.0
 
 The project uses Django REST Framework with DRF routers to register ViewSets. The `betting` app exposes several endpoints in `betting/urls.py`:
 
-- `GET /game-types/` — List and retrieve game types
-- `GET /subsscriptions/` — List and retrieve subscriptions (note: spelled `subsscriptions` in code)
+- `GET /game-types` — List and retrieve game types
+- `GET /game-types/{id}` — List and retrieve specific game type
+- `GET /game-types/categories` — List and retrieve game categories
+- `GET /draws/` — List and retrieve all draws
+- 
+- `GET /subsscriptions/` — List and retrieve subscriptions (note: spelled `subsscriptions` in
+ code)
 - `GET /notifications/` — List and retrieve notifications
 
 ### Known Typo

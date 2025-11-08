@@ -13,9 +13,9 @@ from django.db import models
 class GameType(models.Model):
     """Main game types (e.g., Monday Special, VAG Monday, etc.)"""
     
-    GAME_CHOICES = [
+    GAME_TYPES = [
         # NLA 5/90 Games
-        ('NLA 5/90', 'NLA 5/90'),
+        
         ('Monday Special', 'Monday Special'),
         ('Lucky Tuesday', 'Lucky Tuesday'),
         ('Midweek', 'Midweek'),
@@ -25,7 +25,7 @@ class GameType(models.Model):
         ('Sunday Aseda', 'Sunday Aseda'),
         
         # VAG Games
-        ('VAG Games', 'VAG Games'),
+        
         ('VAG Monday', 'VAG Monday'),
         ('VAG Tuesday', 'VAG Tuesday'),
         ('VAG Wednesday', 'VAG Wednesday'),
@@ -35,7 +35,6 @@ class GameType(models.Model):
         ('VAG Sunday', 'VAG Sunday'),
 
         # Noon Rush
-        ('Noon Rush', 'Noon Rush'),
         ('Noon Monday', 'Noon Monday'),
         ('Noon Tuesday', 'Noon Tuesday'),
         ('Noon Wednesday', 'Noon Wednesday'),
@@ -60,7 +59,7 @@ class GameType(models.Model):
         ('weekly', 'Weekly Digest'),
     ]
     
-    name = models.CharField(max_length=100, choices=GAME_CHOICES)
+    name = models.CharField(max_length=100, choices=GAME_TYPES)
     code = models.CharField(max_length=50, unique=True)
     category = models.CharField(max_length=100, choices=CATEGORY_CHOICES, default='nla_590')
     description = models.TextField()
@@ -115,12 +114,16 @@ class GameType(models.Model):
 class BetType(models.Model):
     """Different ways to bet (e.g., Direct, Permutation, Banker, etc.)"""
     
-    BET_TYPE_CHOICES = [
-        ('direct', 'Direct'),           # All numbers must match in exact order
-        ('perm', 'Permutation'),        # Numbers can be in any order
+    BET_TYPE_CHOICES = [ 
+        ('direct_one','Direct One'),  
+        ('direct_two','Direct Two'),  
+        ('direct_three','Direct Three'),  
+        ('direct_four','Direct Four'),  
+        ('direct_five','Direct Five'),      
+        ('perm two', 'Perm Two'),
+        ('perm three', 'Perm Three'),        # Numbers can be in any order
         ('banker', 'Banker'),           # One number guaranteed + others
         ('against', 'Against'),         # Bet that number WON'T appear
-        ('machine', 'Machine Pick'),    # Random numbers
     ]
     
     name = models.CharField(max_length=50, choices=BET_TYPE_CHOICES, unique=True)
@@ -129,6 +132,7 @@ class BetType(models.Model):
     
     # Odds Configuration
     base_odds = models.DecimalField(
+
         max_digits=10, 
         decimal_places=2,
         help_text="Base payout multiplier (e.g., 180000 for 5/90)"
@@ -330,43 +334,193 @@ class Bet(models.Model):
             return self.potential_winnings
 
 
+
+def check_win(self):
+    """Check if this bet won after draw results are published - FIXED Direct One"""
+    if not self.draw.winning_numbers:
+        return False
     
-    def check_win(self):
-        """Check if this bet won after draw results are published"""
-        if not self.draw.winning_numbers:
-            return False
-        
-        winning_set = set(self.draw.winning_numbers)
-        selected_set = set(self.selected_numbers)
-        
-        if self.bet_type.name == 'direct':
-            # All numbers must match in exact order
-            won = self.selected_numbers == self.draw.winning_numbers[:len(self.selected_numbers)]
-        elif self.bet_type.name == 'perm':
-            # Numbers can be in any order
-            won = selected_set.issubset(winning_set)
-        elif self.bet_type.name == 'against':
-            # Bet that number WON'T appear
-            won = selected_set.isdisjoint(winning_set)
-        else:
-            # Default: check if any numbers match
-            won = len(selected_set.intersection(winning_set)) >= self.bet_type.min_numbers_required
-        
-        if won:
-            self.status = 'won'
-            self.actual_winnings = self.potential_winnings
+    winning_numbers = self.draw.winning_numbers
+    selected_numbers = self.selected_numbers
+    
+    winning_set = set(winning_numbers)
+    selected_set = set(selected_numbers)
+    
+    print(f"[CHECK] Bet {self.bet_number}")
+    print(f"[CHECK] Bet Type: {self.bet_type.name}")
+    print(f"[CHECK] Selected: {selected_numbers}")
+    print(f"[CHECK] Winning: {winning_numbers}")
+    
+    won = False
+    numbers_matched = 0
+    payout_multiplier = Decimal('0.00')
+    
+    # DIRECT ONE LOGIC - Position-based match with 40x multiplier
+    if self.bet_type.name == 'direct_one':
+        if len(selected_numbers) == 1 and len(winning_numbers) >= 1:
+            # Check if the selected number matches the FIRST winning number
+            won = selected_numbers[0] == winning_numbers[0]
+            numbers_matched = 1 if won else 0
             
-            # Update user balance
-            self.user.account_balance += self.actual_winnings
-            self.user.save()
+            # Direct One pays 40x the stake amount
+            if won:
+                payout_multiplier = Decimal('40.00')
+            
+            print(f"[CHECK] Direct One - Position match: {won}")
+            print(f"[CHECK] Selected: {selected_numbers[0]}, First Winning: {winning_numbers[0]}")
+            print(f"[CHECK] Payout multiplier: {payout_multiplier}x")
         else:
-            self.status = 'lost'
-            self.actual_winnings = Decimal('0.00')
+            print(f"[CHECK] Direct One - Invalid: need 1 selected number")
+            won = False
+    
+    # DIRECT TWO LOGIC
+    elif self.bet_type.name == 'direct_two':
+        if len(selected_numbers) == 2 and len(winning_numbers) >= 2:
+            # Check if BOTH selected numbers appear in winning numbers (any position)
+            numbers_matched = len(selected_set.intersection(winning_set))
+            won = numbers_matched == 2  # Both numbers must be present
+            
+            if won:
+                # You can set the multiplier for Direct Two here
+                payout_multiplier = Decimal('240.00')  # Example: adjust as needed
+
+            print(f"[CHECK] Direct Two - Found {numbers_matched}/2 numbers in winning set")
+            print(f"[CHECK] Selected: {selected_set}, Winning: {winning_set}")
+            print(f"[CHECK] Match: {won}")
+            print(f"[CHECK] Payout multiplier: {payout_multiplier}x")
+
+    # DIRECT THREE LOGIC  
+    elif self.bet_type.name == 'direct_three':
+        if len(selected_numbers) == 3 and len(winning_numbers) >= 3:
+            # Check if ALL 3 selected numbers appear in winning numbers (any position)
+            numbers_matched = len(selected_set.intersection(winning_set))
+            won = numbers_matched == 3  # All 3 numbers must be present
+            
+            if won:
+                payout_multiplier = Decimal('2100.00')  
+            
+            print(f"[CHECK] Direct Three - Found {numbers_matched}/3 numbers in winning set")
+            print(f"[CHECK] Selected: {selected_set}, Winning: {winning_set}")
+            print(f"[CHECK] Match: {won}")
+    
+    
+    # DIRECT FOUR LOGIC
+    elif self.bet_type.name == 'direct_four':
+        if len(selected_numbers) == 4 and len(winning_numbers) >= 4:
+            numbers_matched = len(selected_set.intersection(winning_set))
+            won = numbers_matched == 4  # All 4 numbers must be present
+
+            if won:
+                payout_multiplier = Decimal('6,000.00')
+            print(f"[CHECK] Direct Four - Position match: {won}")
+            print(f"[CHECK]N Selected:{selected_set}, Winning: {winning_set}")
+            print(f"[CHECK] Match:{won}")
+                  
+    
+    # DIRECT FIVE LOGIC
+    elif self.bet_type.name == 'direct_five':
+        if len(selected_numbers) == 5 and len(winning_numbers) >= 4:
+            numbers_matched = len(selected_set.intersection(winning_set))
+            won = numbers_matched == 5  # All 4 numbers must be present
+
+            if won:
+                payout_multiplier = Decimal('44,000.00')
+            print(f"[CHECK] Direct Five - Position match: {won}")
+            print(f"[CHECK]N Selected:{selected_set}, Winning: {winning_set}")
+            print(f"[CHECK] Match:{won}")
+             
+    # PERMUTATION LOGIC
+    elif self.bet_type.name.startswith('perm'):
+        numbers_matched = len(selected_set.intersection(winning_set))
         
-        self.processed_at = timezone.now()
-        self.save()
- 
-        return won
+        if self.bet_type.name == 'perm_two':
+            won = numbers_matched >= 2
+            if won:
+                payout_multiplier = Decimal('240.00')
+        elif self.bet_type.name == 'perm_three':
+            won = numbers_matched >= 3
+            if won:
+                payout_multiplier = Decimal('2,100.00')
+        else:
+            won = numbers_matched >= self.bet_type.min_numbers_required
+        
+        print(f"[CHECK] Perm - Matched {numbers_matched} numbers: {won}")
+    
+    
+    # AGAINST LOGIC
+    elif self.bet_type.name == 'against':
+        won = selected_set.isdisjoint(winning_set)
+        numbers_matched = 0
+        if won:
+            payout_multiplier = Decimal('10.00')  # Example: adjust as needed
+        print(f"[CHECK] Against - No matches: {won}")
+    
+    # BANKER LOGIC
+    elif self.bet_type.name == 'banker':
+        numbers_matched = len(selected_set.intersection(winning_set))
+        won = numbers_matched >= self.bet_type.min_numbers_required
+        if won:
+            payout_multiplier = Decimal('100.00')  # Example: adjust as needed
+        print(f"[CHECK] Banker - Matched {numbers_matched} numbers: {won}")
+    
+    # DEFAULT LOGIC
+    else:
+        numbers_matched = len(selected_set.intersection(winning_set))
+        won = numbers_matched >= self.bet_type.min_numbers_required
+        print(f"[CHECK] Default - Matched {numbers_matched} numbers: {won}")
+    
+    print(f"[CHECK] Final Result: {'WON' if won else 'LOST'}")
+    
+    # Calculate winnings based on the result
+    if won:
+        self.status = 'won'
+        
+        # Use the calculated payout_multiplier if we have one
+        if payout_multiplier > 0:
+            self.actual_winnings = self.stake_amount * payout_multiplier
+            print(f"[CHECK] Using calculated multiplier: {payout_multiplier}x")
+        else:
+            # Fallback: Try to get odds from GameOdds table
+            try:
+                odds = GameOdds.objects.get(
+                    game_type=self.draw.game_type,
+                    bet_type=self.bet_type,
+                    numbers_count=len(self.selected_numbers),
+                    numbers_matched=numbers_matched
+                )
+                self.actual_winnings = self.stake_amount * odds.payout_multiplier
+                print(f"[CHECK] Using GameOdds: {odds.payout_multiplier}x")
+            except GameOdds.DoesNotExist:
+                # Final fallback: use bet type base odds
+                self.actual_winnings = self.stake_amount * self.bet_type.base_odds
+                print(f"[CHECK] Using base odds: {self.bet_type.base_odds}x")
+        
+        # Update user balance
+        self.user.account_balance += self.actual_winnings
+        self.user.save()
+        print(f"[CHECK] Winnings: GH₵{self.actual_winnings}")
+        
+        # Create winning transaction
+        BetTransaction.objects.create(
+            bet=self,
+            user=self.user,
+            transaction_type='win',
+            amount=self.actual_winnings,
+            balance_before=self.user.account_balance - self.actual_winnings,
+            balance_after=self.user.account_balance,
+            reference=generate_transaction_reference(),
+            description=f"Winnings for bet {self.bet_number}"
+        )
+        
+    else:
+        self.status = 'lost'
+        self.actual_winnings = Decimal('0.00')
+        print(f"[CHECK] No winnings")
+    
+    self.processed_at = timezone.now()
+    self.save()
+    
+    return won
 
 class BetTransaction(models.Model):
     """Financial transaction for a bet"""

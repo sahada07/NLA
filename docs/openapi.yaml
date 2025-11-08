@@ -1,0 +1,460 @@
+openapi: 3.0.3
+info:
+  title: NLA Lottery API
+  version: "1.0.0"
+  description: |
+    OpenAPI specification for the main NLA API endpoints (subset).
+    Includes JWT auth and example payloads for common flows: auth, game types, draws, subscriptions, notifications and bets.
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server (override when deployed)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TokenRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      example:
+        username: testuser
+        password: password
+
+    TokenResponse:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+
+    GameType:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        category:
+          type: string
+        min_stake:
+          type: string
+        max_stake:
+          type: string
+        is_active:
+          type: boolean
+      example:
+        id: 1
+        name: Quick 5/11
+        code: TEST_GAME
+        category: other_games
+        min_stake: "1.00"
+        max_stake: "100.00"
+        is_active: true
+
+    DrawListItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        game_type:
+          type: integer
+        game_name:
+          type: string
+        draw_number:
+          type: string
+        draw_date:
+          type: string
+          format: date
+        draw_time:
+          type: string
+        status:
+          type: string
+        betting_opens_at:
+          type: string
+          format: date-time
+        betting_closes_at:
+          type: string
+          format: date-time
+        is_betting_open:
+          type: boolean
+
+    PlaceBetRequest:
+      type: object
+      required: [draw_id, bet_type_id, selected_numbers, stake_amount]
+      properties:
+        draw_id:
+          type: integer
+        bet_type_id:
+          type: integer
+        selected_numbers:
+          type: array
+          items:
+            type: integer
+        stake_amount:
+          type: string
+      example:
+        draw_id: 5
+        bet_type_id: 1
+        selected_numbers: [1,2,3,4,5]
+        stake_amount: "1.00"
+
+    BetResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        bet_number:
+          type: string
+        game_name:
+          type: string
+        bet_type_name:
+          type: string
+        draw_number:
+          type: string
+        selected_numbers:
+          type: array
+          items:
+            type: integer
+        stake_amount:
+          type: string
+        potential_winnings:
+          type: string
+        status:
+          type: string
+
+    UserSubscription:
+      type: object
+      properties:
+        id:
+          type: integer
+        game_type:
+          type: integer
+        game_name:
+          type: string
+        is_active:
+          type: boolean
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        notification_type:
+          type: string
+        is_read:
+          type: boolean
+
+paths:
+  /api/token/:
+    post:
+      summary: Obtain JWT access and refresh tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: Tokens returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+
+  /api/token/refresh/:
+    post:
+      summary: Refresh JWT access token using refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+      responses:
+        '200':
+          description: New access token
+
+  /api/games-types/:
+    get:
+      summary: List active game types
+      responses:
+        '200':
+          description: A list of game types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameType'
+
+  /api/games-types/{id}/:
+    get:
+      summary: Retrieve a specific game type
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Game type details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameType'
+
+  /api/draws/:
+    get:
+      summary: List draws (filter with query params)
+      parameters:
+        - in: query
+          name: upcoming
+          schema:
+            type: string
+          description: Pass 'true' to filter upcoming draws
+      responses:
+        '200':
+          description: List of draws
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DrawListItem'
+
+  /api/draws/open/:
+    get:
+      summary: Get draws currently open for betting
+      responses:
+        '200':
+          description: Open draws
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DrawListItem'
+
+  /api/draws/{id}/results/:
+    get:
+      summary: Get draw results (only when draw.status == completed)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Draw results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  draw_number:
+                    type: string
+                  game_name:
+                    type: string
+                  draw_date:
+                    type: string
+                    format: date
+                  winning_numbers:
+                    type: array
+                    items:
+                      type: integer
+                  machine_number:
+                    type: string
+                  total_bets:
+                    type: integer
+                  total_payout:
+                    type: string
+
+  /api/subscriptions/toggle_subscription/:
+    post:
+      summary: Subscribe or unsubscribe a user from a game type (authenticated)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_type_id:
+                  type: integer
+                subscribe:
+                  type: boolean
+      responses:
+        '200':
+          description: Subscription status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSubscription'
+
+  /api/subscriptions/my_subscriptions/:
+    get:
+      summary: Get current user's subscriptions (authenticated)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of subscriptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSubscription'
+
+  /api/notifications/:
+    get:
+      summary: List notifications for current user (authenticated)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Notifications list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+
+  /api/notifications/{id}/mark_read/:
+    post:
+      summary: Mark a notification as read (authenticated)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success message
+
+  /api/notifications/unread_count/:
+    get:
+      summary: Get unread notification count (authenticated)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unread_count:
+                    type: integer
+
+  /api/bets/:
+    get:
+      summary: List user's bets (authenticated)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of bets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BetResponse'
+
+    post:
+      summary: Place a new bet (authenticated)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceBetRequest'
+      responses:
+        '201':
+          description: Created bet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BetResponse'
+
+  /api/bets/active/:
+    get:
+      summary: Get user's active bets (authenticated)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Active bets
+
+  /api/bets/history/:
+    get:
+      summary: Get user's bets history (authenticated)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Bet history
+
+  /api/bets/{id}/check_result/:
+    get:
+      summary: Check result for a bet (authenticated)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Bet result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bet_number:
+                    type: string
+                  status:
+                    type: string
+                  won:
+                    type: boolean
+                  winnings:
+                    type: string
+
+security:
+  - {}

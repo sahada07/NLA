@@ -15,6 +15,7 @@ import os
 from dotenv import load_dotenv
 from datetime import timedelta
 import dj_database_url
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -59,8 +60,14 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+
     'users',
-    'betting',  
+    'betting',
+    'wallet',
+
+    'django_celery_beat',
+    'django_celery_results', 
+
     'cloudinary',
      'cloudinary_storage',  
 
@@ -137,11 +144,19 @@ WSGI_APPLICATION = 'NLA.wsgi.application'
 
 
 
-DATABASE_URL=os.getenv("DATABASE_URL")
-DATABASES = {
-        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+# DATABASE_URL=os.getenv("DATABASE_URL")
+# DATABASES = {
+#         'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
         
-    }
+#     }
+
+DATABASES = {
+    'default': dj_database_url.config(
+        default=config('DATABASE_URL', default='sqlite:///db.sqlite3'),
+        conn_max_age=600
+    )
+}
+
 
 
 
@@ -201,4 +216,53 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Use Redis as message broker
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+
+# Payment Gateway Settings
+PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY', 'sk_test_a47aea89e3d03cde5af7d7094df3a6514122c70b')
+PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY', 'pk_test_d1151743f39644458b834bfd458e35b53b3d87fe')
+PAYSTACK_CALLBACK_URL = 'https://nla-1-jmdg.onrender.com/api/payments/paystack/callback/'
+
+from celery.schedules import crontab
+
+    
+CELERY_BEAT_SCHEDULE = {
+    'check-draw-status-every-minute': {
+        'task': 'betting.tasks.check_draw_status',
+        'schedule': 60.0,  # Every minute
+    },
+    'process-completed-draws-every-5-minutes': {
+        'task': 'betting.tasks.process_completed_draws',
+        'schedule': 300.0,  # Every 5 minutes
+    },
+    'send-daily-digest-at-8pm': {
+        'task': 'betting.tasks.send_daily_digest',
+        'schedule': crontab(hour=20, minute=0),  # 8 PM daily
+    },
+    'cleanup-old-data-daily': {
+        'task': 'betting.tasks.cleanup_old_data',
+        'schedule': crontab(hour=2, minute=0),  # 2 AM daily
+    },
+    'check-winning-bets-every-10-minutes': {
+        'task': 'betting.tasks.check_winning_bets',
+        'schedule': 600.0,  # Every 10 minutes
+    },
+
+    'verify-pending-payments': {
+        'task': 'payments.tasks.verify_pending_payments',
+        'schedule': crontab(minute='*/2'),
+    },
+}
+
+# Celery Beat (for scheduled tasks)
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
